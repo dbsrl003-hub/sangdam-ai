@@ -183,89 +183,94 @@
                         </button>
                     </div>
 
-                    <!-- Audio Upload Area (Hidden by default, shown when clicking Audio Tab) -->
-                    <div id="audioUploadContainer" class="hidden flex-col gap-3 p-4 bg-mist rounded-xl border border-dashed border-slate-300 transition-all">
-                        <div class="flex flex-col items-center justify-center text-center py-4 gap-2 cursor-pointer" onclick="document.getElementById('audioFileInput').click()">
-                            <div class="w-12 h-12 rounded-full bg-brand-violet/10 text-brand-violet flex items-center justify-center text-2xl">
+                    <!-- Audio Upload Area (Only visible on Audio Tab) -->
+                    <div id="audioUploadContainer" class="hidden flex-col gap-4 p-5 bg-mist rounded-xl border border-dashed border-slate-300 transition-all">
+                        <div class="flex flex-col items-center justify-center text-center py-8 gap-3 cursor-pointer bg-signal-white rounded-xl border border-bone hover:border-brand-violet transition" onclick="document.getElementById('audioFileInput').click()">
+                            <div class="w-14 h-14 rounded-full bg-brand-violet/10 text-brand-violet flex items-center justify-center text-3xl">
                                 <i class="ph ph-cloud-arrow-up"></i>
                             </div>
                             <div>
-                                <p class="text-xs font-bold text-onyx">녹음 또는 음성 파일 클릭하여 업로드</p>
-                                <p class="text-[11px] text-slate-gray">m4a, mp3, wav, ogg, webm 파일 지원</p>
+                                <p class="text-sm font-bold text-onyx">녹음 또는 음성 파일 클릭하여 업로드</p>
+                                <p class="text-xs text-slate-gray mt-1">m4a, mp3, wav, ogg, webm, mp4 등 모든 음성 파일 지원</p>
                             </div>
-                            <input type="file" id="audioFileInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+                            <input type="file" id="audioFileInput" accept="audio/*,video/mp4,video/m4a" class="hidden" onchange="handleAudioUpload(event)">
                         </div>
 
                         <!-- Selected Audio Preview Status -->
-                        <div id="audioFileInfo" class="hidden bg-signal-white p-3 rounded-lg border border-bone flex items-center justify-between text-xs">
+                        <div id="audioFileInfo" class="hidden bg-signal-white p-3.5 rounded-lg border border-bone flex items-center justify-between text-xs">
                             <div class="flex items-center gap-2 overflow-hidden">
-                                <i class="ph ph-file-audio text-brand-violet text-lg"></i>
-                                <span id="audioFileName" class="font-medium text-onyx truncate">audio_record.mp3</span>
-                                <span id="audioFileSize" class="text-[10px] text-slate-gray font-mono">2.4MB</span>
+                                <i class="ph ph-file-audio text-brand-violet text-xl"></i>
+                                <div class="flex flex-col overflow-hidden">
+                                    <span id="audioFileName" class="font-semibold text-onyx truncate">audio_record.mp3</span>
+                                    <span id="audioFileSize" class="text-[10px] text-slate-gray font-mono">2.4MB</span>
+                                </div>
                             </div>
-                            <button onclick="clearAudioFile(event)" class="text-slate-gray hover:text-red-500 text-sm">
+                            <button onclick="clearAudioFile(event)" class="text-slate-gray hover:text-red-500 text-base p-1">
                                 <i class="ph ph-x-circle"></i>
                             </button>
                         </div>
 
-                        <button id="sttConvertBtn" onclick="convertAudioToText()" class="btn-pill-black py-2.5 px-4 text-xs flex items-center justify-center gap-2">
-                            <i class="ph ph-waveform"></i>
-                            <span>음성을 텍스트로 변환하기 (STT)</span>
+                        <button id="sttConvertBtn" onclick="convertAudioToText()" class="btn-pill-violet py-3 px-5 text-xs flex items-center justify-center gap-2 font-bold shadow-md shadow-brand-violet/20">
+                            <i class="ph ph-waveform text-lg"></i>
+                            <span>녹음파일 텍스트로 변환하기</span>
                         </button>
                     </div>
 
-                    <!-- Main Textarea -->
-                    <div class="flex flex-col gap-2">
-                        <div class="flex justify-between items-center text-xs text-slate-gray font-medium">
-                            <label for="rawInput" id="inputLabel">원문 상담 기록 입력 (자유 양식 메모)</label>
-                            <span id="charCounter" class="text-[11px] font-mono">0 자</span>
-                        </div>
-                        <textarea id="rawInput" oninput="updateCharCounter()" rows="8" placeholder="예시:
+                    <!-- Text Mode Inputs Wrapper (Hidden when Audio Tab is active) -->
+                    <div id="textInputsWrapper" class="flex flex-col gap-4">
+                        <!-- Main Textarea -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-center text-xs text-slate-gray font-medium">
+                                <label for="rawInput" id="inputLabel">원문 상담 기록 입력 (자유 양식 메모)</label>
+                                <span id="charCounter" class="text-[11px] font-mono">0 자</span>
+                            </div>
+                            <textarea id="rawInput" oninput="updateCharCounter()" rows="8" placeholder="예시:
 - 대상자: 김OO 어르신 (독거노인)
 - 방문 이유: 최근 주거환경 악화 및 식사 해결 어려움 호소.
 - 상담 내용: 무릎 관절염으로 외부 활동 불가. 건강 상태 악화되어 식사 하루 1끼만 하심. 
 - 주호소: 반찬 지원 원하심, 주택 체포 문제 해결 원함.
 - 복지사 의견: 도시락 지원 사업 연계 및 기초생활수급 재평가 필요." class="clickup-input text-sm w-full leading-relaxed resize-none"></textarea>
-                    </div>
-
-                    <!-- Client Profile Inputs -->
-                    <div class="grid grid-cols-2 gap-3 pt-1">
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-gray block mb-1">상담 대상 구분</label>
-                            <select id="consultCategory" onchange="updateSubTypes()" class="clickup-input text-xs w-full bg-signal-white font-medium">
-                                <option value="이용자 상담 (장애인)">이용자 상담 (장애인)</option>
-                                <option value="활동지원사 상담">활동지원사 상담</option>
-                            </select>
                         </div>
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-gray block mb-1">세부 상담 유형</label>
-                            <select id="consultType" class="clickup-input text-xs w-full bg-signal-white">
-                                <!-- Dynamic Options loaded via JS -->
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-gray block mb-1">내담자/활동지원사 성명 (선택)</label>
-                            <input type="text" id="clientName" placeholder="예: 이OO 이용자 또는 박OO 활동지원사" class="clickup-input text-xs w-full">
+                        <!-- Client Profile Inputs -->
+                        <div class="grid grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-gray block mb-1">상담 대상 구분</label>
+                                <select id="consultCategory" onchange="updateSubTypes()" class="clickup-input text-xs w-full bg-signal-white font-medium">
+                                    <option value="이용자 상담 (장애인)">이용자 상담 (장애인)</option>
+                                    <option value="활동지원사 상담">활동지원사 상담</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-gray block mb-1">세부 상담 유형</label>
+                                <select id="consultType" class="clickup-input text-xs w-full bg-signal-white">
+                                    <!-- Dynamic Options loaded via JS -->
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Action Button -->
-                    <button id="generateBtn" onclick="generateJournal()" class="btn-pill-violet py-3.5 px-6 text-sm flex items-center justify-center gap-2 mt-2 shadow-md shadow-brand-violet/20">
-                        <i class="ph ph-sparkle text-lg"></i>
-                        <span>사회복지 규격 상담일지 정제하기</span>
-                    </button>
+                        <div class="grid grid-cols-1 gap-3">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-gray block mb-1">내담자/활동지원사 성명 (선택)</label>
+                                <input type="text" id="clientName" placeholder="예: 이OO 이용자 또는 박OO 활동지원사" class="clickup-input text-xs w-full">
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button id="generateBtn" onclick="generateJournal()" class="btn-pill-violet py-3.5 px-6 text-sm flex items-center justify-center gap-2 mt-2 shadow-md shadow-brand-violet/20">
+                            <i class="ph ph-sparkle text-lg"></i>
+                            <span>사회복지 규격 상담일지 정제하기</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Pre-made Samples -->
-            <div class="flex items-center gap-2 text-xs">
+            <div id="sampleButtonsWrapper" class="flex items-center gap-2 text-xs">
                 <span class="text-slate-gray font-medium">상담 예시:</span>
                 <button onclick="loadSample('userLink')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[이용자] 이용연계</button>
                 <button onclick="loadSample('userMonitor')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[이용자] 모니터링</button>
-                <button onclick="loadSample('helperConsult')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[활동지원사] 고충/모니터링</button>
+                <button onclick="loadSample('helperConsult')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[활동지원사] 고충상담</button>
             </div>
         </section>
 
@@ -426,7 +431,7 @@
                 "이용연계 상담 (신규/변경)",
                 "모니터링 상담 (점검/만족도)",
                 "종결 관련 상담 (서비스 중단/이관)",
-                "고충 상담",
+                "고충상담",
                 "기타 요구사항 상담"
             ],
             "활동지원사 상담": [
@@ -517,15 +522,23 @@
             const tText = document.getElementById('tabText');
             const tAudio = document.getElementById('tabAudio');
             const audioContainer = document.getElementById('audioUploadContainer');
+            const textInputsWrapper = document.getElementById('textInputsWrapper');
+            const sampleButtonsWrapper = document.getElementById('sampleButtonsWrapper');
 
             if (tab === 'text') {
                 tText.className = "btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5";
                 tAudio.className = "btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5";
                 audioContainer.classList.add('hidden');
+                audioContainer.classList.remove('flex');
+                textInputsWrapper.classList.remove('hidden');
+                sampleButtonsWrapper.classList.remove('hidden');
             } else {
                 tAudio.className = "btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5";
                 tText.className = "btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5";
                 audioContainer.classList.remove('hidden');
+                audioContainer.classList.add('flex');
+                textInputsWrapper.classList.add('hidden');
+                sampleButtonsWrapper.classList.add('hidden');
             }
         }
 
@@ -535,7 +548,7 @@
             if (!file) return;
 
             if (file.size > 20 * 1024 * 1024) {
-                showToast("파일 크기가 20MB를 초과합니다. 더 짧은 녹음 파일을 사용해 주세요.");
+                showToast("파일 크기가 20MB를 초과합니다. 파일 용량을 확인해 주세요.");
                 return;
             }
 
@@ -543,13 +556,25 @@
             document.getElementById('audioFileSize').textContent = (file.size / (1024 * 1024)).toFixed(2) + 'MB';
             document.getElementById('audioFileInfo').classList.remove('hidden');
 
-            selectedAudioMime = file.type || "audio/mp3";
+            // Detect MIME type reliably
+            let mimeType = file.type;
+            if (!mimeType) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'm4a') mimeType = 'audio/m4a';
+                else if (ext === 'mp3') mimeType = 'audio/mp3';
+                else if (ext === 'wav') mimeType = 'audio/wav';
+                else if (ext === 'ogg') mimeType = 'audio/ogg';
+                else if (ext === 'webm') mimeType = 'audio/webm';
+                else if (ext === 'mp4') mimeType = 'audio/mp4';
+                else mimeType = 'audio/mp3';
+            }
+            selectedAudioMime = mimeType;
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const result = e.target.result;
                 selectedAudioBase64 = result.split(',')[1];
-                showToast("음성 파일이 성공적으로로드되었습니다.");
+                showToast("음성 파일이 성공적으로 로드되었습니다.");
             };
             reader.readAsDataURL(file);
         }
@@ -578,10 +603,10 @@
             const requestBody = {
                 contents: [{
                     parts: [
-                        { text: "이 음성 녹음 파일을 듣고 말소리를 정확히 한국어 텍스트로 받아적어주세요. 불필요한 서론이나 추임새 없이 녹음 내용 원문 텍스트만 출력하세요." },
+                        { text: "이 음성 녹음 파일을 듣고 정확히 한국어 대화 텍스트로 받아적어주세요. 불필요한 설명이나 인삿말 없이 녹음 음성 내용을 있는 그대로 받아적은 텍스트만 출력하세요." },
                         {
                             inlineData: {
-                                mimeType: selectedAudioMime,
+                                mimeType: selectedAudioMime || "audio/mp3",
                                 data: selectedAudioBase64
                             }
                         }
@@ -597,18 +622,25 @@
                 });
 
                 const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error.message || "Gemini API Error");
+                }
+
                 const transcribedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
                 if (transcribedText) {
+                    // Switch back to text tab and fill transcribed text
+                    switchInputTab('text');
                     document.getElementById('rawInput').value = transcribedText;
                     updateCharCounter();
-                    showToast("음성 녹음이 텍스트로 변환되었습니다! 아래에서 수정 후 일지를 정제하세요.");
+                    showToast("음성 변환 완료! 메모를 확인하고 '상담일지 정제하기'를 누르세요.");
                 } else {
                     throw new Error("STT Conversion Failed");
                 }
             } catch (err) {
-                console.error(err);
-                showToast("음성 변환에 실패했습니다. API 키 및 녹음 파일 형식을 확인하세요.");
+                console.error("Audio Transcription Error:", err);
+                showToast("음성 변환 실패: API 키 설정 및 음성 파일 포맷을 확인해 주세요.");
             } finally {
                 document.getElementById('loadingSpinner').classList.add('hidden');
             }
