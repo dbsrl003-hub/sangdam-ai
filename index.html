@@ -287,7 +287,7 @@
                     <h4 class="font-display font-bold text-xs text-onyx uppercase tracking-wider flex items-center gap-1.5">
                         <i class="ph ph-clock-counter-clockwise text-brand-violet"></i> 최근 작성 일지 히스토리
                     </h4>
-                    <button onclick="clearHistory()" class="text-[11px] text-slate-gray hover:underline">기록 삭제</button>
+                    <button onclick="clearHistory()" class="text-[11px] text-slate-gray hover:underline">전체 삭제</button>
                 </div>
                 <div id="historyList" class="flex flex-col gap-2 max-h-48 overflow-y-auto">
                     <p class="text-xs text-slate-gray italic text-center py-2">저장된 상담일지 기록이 없습니다.</p>
@@ -681,12 +681,17 @@ ${rawText}
                 return;
             }
             listEl.innerHTML = historyData.map(item => `
-                <div onclick="loadHistoryItem(${item.id})" class="p-2.5 rounded-xl border border-bone bg-signal-white hover:bg-mist cursor-pointer transition flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <span class="font-bold text-onyx">${item.client}</span>
-                        <span class="px-2 py-0.5 rounded-full bg-bone text-[10px] text-slate-gray">${item.type}</span>
+                <div class="p-2.5 rounded-xl border border-bone bg-signal-white hover:bg-mist transition flex items-center justify-between text-xs group">
+                    <div onclick="loadHistoryItem(${item.id})" class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer pr-2">
+                        <span class="font-bold text-onyx truncate">${item.client}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-bone text-[10px] text-slate-gray whitespace-nowrap">${item.type}</span>
                     </div>
-                    <span class="text-[10px] text-slate-gray font-mono">${item.date.split(' ')[0]}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-gray font-mono whitespace-nowrap">${item.date.split(' ')[0]}</span>
+                        <button onclick="deleteHistoryItem(event, ${item.id})" class="text-slate-gray hover:text-red-500 opacity-60 group-hover:opacity-100 p-1 transition" title="이 항목 삭제">
+                            <i class="ph ph-trash text-sm"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -701,11 +706,19 @@ ${rawText}
             }
         }
 
+        function deleteHistoryItem(event, id) {
+            event.stopPropagation(); // Prevents loading the item when clicking delete
+            historyData = historyData.filter(h => h.id !== id);
+            localStorage.setItem('oryzo_history', JSON.stringify(historyData));
+            renderHistory();
+            showToast("선택한 항목이 삭제되었습니다.");
+        }
+
         function clearHistory() {
             historyData = [];
             localStorage.removeItem('oryzo_history');
             renderHistory();
-            showToast("히스토리가 삭제되었습니다.");
+            showToast("히스토리가 전체 삭제되었습니다.");
         }
 
         // Toast Helper
