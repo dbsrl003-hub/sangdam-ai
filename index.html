@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORYZO AI - 상담일지 자동 정리기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-violet': '#6647f0',
+                        'brand-purple': '#8b5cf6',
+                        'brand-blue': '#0091ff',
+                        'signal-white': '#ffffff',
+                        'plaster': '#f8f9fa',
+                        'mist': '#f1f3f5',
+                        'bone': '#e9ecef',
+                        'onyx': '#202020',
+                        'slate-gray': '#64748b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #202020;
+        }
+        .clickup-card {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+        }
+        .btn-pill-black {
+            background-color: #202020;
+            color: #ffffff;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-pill-black:hover {
+            background-color: #000000;
+            transform: translateY(-1px);
+        }
+        .btn-pill-violet {
+            background-color: #6647f0;
+            color: #ffffff;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-pill-violet:hover {
+            background-color: #5537df;
+            transform: translateY(-1px);
+        }
+        .btn-pill-ghost {
+            background-color: transparent;
+            border: 1px solid #e9ecef;
+            color: #202020;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-pill-ghost:hover {
+            background-color: #f1f3f5;
+        }
+        .rainbow-border {
+            position: relative;
+            background: #ffffff;
+            border-radius: 20px;
+        }
+        .rainbow-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 22px;
+            background: conic-gradient(from 0deg, #6647f0, #0091ff, #00e5ff, #6647f0);
+            z-index: -1;
+            opacity: 0.7;
+        }
+        .clickup-input {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+        .clickup-input:focus {
+            border-color: #6647f0;
+            box-shadow: 0 0 0 3px rgba(102, 71, 240, 0.1);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f3f5;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- NAVIGATION HEADER -->
+    <header class="sticky top-0 z-40 bg-signal-white/90 backdrop-blur-md border-b border-bone px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-brand-violet text-white flex items-center justify-center font-display font-extrabold text-lg shadow-md shadow-brand-violet/20">
+                    O
+                </div>
+                <div>
+                    <h1 class="font-display font-extrabold text-lg text-onyx tracking-tight flex items-center gap-2">
+                        ORYZO AI
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-violet/10 text-brand-violet uppercase">사회복지 상담일지</span>
+                    </h1>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleModal('apiModal')" class="btn-pill-ghost text-xs px-4 py-2 flex items-center gap-2">
+                    <i class="ph ph-key text-brand-violet"></i>
+                    <span id="apiKeyStatusText">Gemini API 키 설정</span>
+                </button>
+                <button onclick="clearCurrentSession()" class="btn-pill-ghost text-xs px-3 py-2 text-slate-gray hover:text-onyx" title="새 상담 작성">
+                    <i class="ph ph-plus-circle text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- LEFT PANEL: INPUT & AI GENERATION -->
+        <section class="lg:col-span-6 flex flex-col gap-6">
+            
+            <!-- Hero Heading -->
+            <div class="flex flex-col gap-2">
+                <div class="inline-flex items-center gap-2 text-xs font-semibold text-brand-violet bg-brand-violet/5 px-3 py-1 rounded-full w-max border border-brand-violet/10">
+                    <i class="ph ph-heart-beat-fill"></i> Social Work Consultation Journal Assistant
+                </div>
+                <h2 class="font-display text-3xl sm:text-4xl font-extrabold text-onyx tracking-tight">
+                    사회복지 상담일지 <span class="text-brand-violet">AI 자동 생성</span>
+                </h2>
+                <p class="text-slate-gray text-sm leading-relaxed">
+                    현장에서 급하게 작성한 상담 메모, 녹화/녹음 텍스트를 사회복지 현장 표준 규격 일지(주호소, 평가, 개입계획 등)로 정제합니다.
+                </p>
+            </div>
+
+            <!-- Input Box Container -->
+            <div class="rainbow-border p-1 shadow-lg">
+                <div class="bg-signal-white rounded-[18px] p-5 flex flex-col gap-4">
+                    
+                    <!-- Mode Selector Pills -->
+                    <div class="flex items-center gap-2 border-b border-bone pb-3">
+                        <button id="tabText" onclick="switchInputTab('text')" class="btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5">
+                            <i class="ph ph-note-pencil"></i> 상담 메모/기록
+                        </button>
+                        <button id="tabAudio" onclick="switchInputTab('audio')" class="btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5">
+                            <i class="ph ph-microphone"></i> 축약 녹음 텍스트
+                        </button>
+                    </div>
+
+                    <!-- Main Textarea -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs text-slate-gray font-medium">
+                            <label for="rawInput">원문 상담 기록 입력 (자유 양식 메모)</label>
+                            <span id="charCounter" class="text-[11px] font-mono">0 자</span>
+                        </div>
+                        <textarea id="rawInput" oninput="updateCharCounter()" rows="9" placeholder="예시:
+- 대상자: 김OO 어르신 (독거노인)
+- 방문 이유: 최근 주거환경 악화 및 식사 해결 어려움 호소.
+- 상담 내용: 무릎 관절염으로 외부 활동 불가. 건강 상태 악화되어 식사 하루 1끼만 하심. 
+- 주호소: 반찬 지원 원하심, 주택 체포 문제 해결 원함.
+- 복지사 의견: 도시락 지원 사업 연계 및 기초생활수급 재평가 필요." class="clickup-input text-sm w-full leading-relaxed resize-none"></textarea>
+                    </div>
+
+                    <!-- Client Profile Inputs -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-gray block mb-1">상담 대상 구분</label>
+                            <select id="consultCategory" onchange="updateSubTypes()" class="clickup-input text-xs w-full bg-signal-white font-medium">
+                                <option value="이용자 상담 (장애인)">이용자 상담 (장애인)</option>
+                                <option value="활동지원사 상담">활동지원사 상담</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-gray block mb-1">세부 상담 유형</label>
+                            <select id="consultType" class="clickup-input text-xs w-full bg-signal-white">
+                                <!-- Dynamic Options loaded via JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-gray block mb-1">내담자/활동지원사 성명 (선택)</label>
+                            <input type="text" id="clientName" placeholder="예: 이OO 이용자 또는 박OO 활동지원사" class="clickup-input text-xs w-full">
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="generateBtn" onclick="generateJournal()" class="btn-pill-violet py-3.5 px-6 text-sm flex items-center justify-center gap-2 mt-2 shadow-md shadow-brand-violet/20">
+                        <i class="ph ph-sparkle text-lg"></i>
+                        <span>사회복지 규격 상담일지 정제하기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pre-made Samples -->
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-gray font-medium">상담 예시:</span>
+                <button onclick="loadSample('userLink')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[이용자] 이용연계</button>
+                <button onclick="loadSample('userMonitor')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[이용자] 모니터링</button>
+                <button onclick="loadSample('helperConsult')" class="px-2.5 py-1 rounded-full bg-mist hover:bg-bone text-onyx font-medium transition">[활동지원사] 고충/모니터링</button>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: AI GENERATED RESULT & HISTORY -->
+        <section class="lg:col-span-6 flex flex-col gap-6">
+            
+            <!-- Result Box Card -->
+            <div class="clickup-card p-6 flex flex-col gap-4 min-h-[540px] relative">
+                
+                <!-- Result Header -->
+                <div class="flex items-center justify-between border-b border-bone pb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-brand-violet animate-pulse"></div>
+                        <h3 class="font-display font-bold text-base text-onyx">사회복지 표준 규격 상담일지</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="copyResultText()" class="btn-pill-ghost text-xs px-3 py-1.5 flex items-center gap-1">
+                            <i class="ph ph-copy"></i> 복사하기
+                        </button>
+                        <button onclick="downloadAsTxt()" class="btn-pill-ghost text-xs px-3 py-1.5 flex items-center gap-1">
+                            <i class="ph ph-download-simple"></i> 저장
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result Content Loading Placeholder -->
+                <div id="loadingSpinner" class="hidden absolute inset-0 bg-signal-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-3 rounded-2xl">
+                    <div class="w-10 h-10 border-4 border-brand-violet/20 border-t-brand-violet rounded-full animate-spin"></div>
+                    <p class="text-xs font-semibold text-onyx">사회복지 현장 양식에 맞춰 상담일지를 구성하고 있습니다...</p>
+                </div>
+
+                <!-- Result Text Display / Empty State -->
+                <div id="resultContainer" class="flex-1 overflow-y-auto max-h-[580px] text-sm leading-relaxed text-onyx whitespace-pre-wrap font-sans">
+                    <div class="h-full flex flex-col items-center justify-center text-center p-8 gap-3 text-slate-gray">
+                        <i class="ph ph-notebook text-4xl text-bone"></i>
+                        <p class="text-xs">상담 메모를 입력하고 <br><strong class="text-onyx">'사회복지 규격 상담일지 정제하기'</strong>를 눌러주세요.</p>
+                    </div>
+                </div>
+
+                <!-- Footer Stats -->
+                <div class="border-t border-bone pt-3 flex justify-between items-center text-[11px] text-slate-gray">
+                    <span id="createdDate">작성 일시: -</span>
+                    <span id="modelUsedTag" class="px-2 py-0.5 rounded-full bg-mist font-mono">Model: Gemini 3 Flash</span>
+                </div>
+            </div>
+
+            <!-- History List -->
+            <div class="clickup-card p-5 flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h4 class="font-display font-bold text-xs text-onyx uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="ph ph-clock-counter-clockwise text-brand-violet"></i> 최근 작성 일지 히스토리
+                    </h4>
+                    <button onclick="clearHistory()" class="text-[11px] text-slate-gray hover:underline">기록 삭제</button>
+                </div>
+                <div id="historyList" class="flex flex-col gap-2 max-h-48 overflow-y-auto">
+                    <p class="text-xs text-slate-gray italic text-center py-2">저장된 상담일지 기록이 없습니다.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-bone bg-signal-white py-4 px-6 text-center text-xs text-slate-gray">
+        <p>© 2026 ORYZO AI. Powered by Google Gemini 3 Flash. Built for Productivity.</p>
+    </footer>
+
+    <!-- API KEY SETTING MODAL -->
+    <div id="apiModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-onyx/40 backdrop-blur-sm hidden">
+        <div class="clickup-card w-full max-w-md p-6 flex flex-col gap-5 relative shadow-2xl">
+            <div class="flex justify-between items-center border-b border-bone pb-3">
+                <span class="font-display font-bold text-sm text-onyx">Gemini API Key 설정</span>
+                <button onclick="toggleModal('apiModal')" class="text-slate-gray hover:text-onyx text-lg">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-gray leading-relaxed">
+                개인 Gemini API 키를 등록하면 본인 계정의 요청 한도로 빠르고 안전하게 동작합니다. 미입력 시 내장 기본 키로 동작합니다.
+            </p>
+            <div class="bg-mist p-3 rounded-xl border border-bone flex items-center justify-between text-xs">
+                <span class="text-slate-gray">API 키가 없으신가요?</span>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-brand-violet font-bold hover:underline inline-flex items-center gap-1">
+                    Google AI Studio에서 발급 <i class="ph ph-arrow-square-out"></i>
+                </a>
+            </div>
+            <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="clickup-input text-xs w-full">
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="saveApiKey()" class="btn-pill-black py-2.5 px-6 text-xs">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIRST VISIT AUTOMATIC API WELCOME MODAL -->
+    <div id="apiWelcomeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-onyx/50 backdrop-blur-md hidden">
+        <div class="clickup-card w-full max-w-lg p-6 flex flex-col gap-5 relative shadow-2xl border-bone animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-start border-b border-bone pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-brand-violet/10 flex items-center justify-center text-brand-violet text-xl font-bold">
+                        <i class="ph ph-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-base text-onyx">Gemini API 키 입력 안내</h3>
+                        <p class="text-xs text-slate-gray">원활한 AI 자동 상담일지 정제를 위한 안내입니다.</p>
+                    </div>
+                </div>
+                <button onclick="toggleModal('apiWelcomeModal')" class="text-slate-gray hover:text-onyx text-lg p-1">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-3 text-xs text-slate-gray leading-relaxed">
+                <p class="text-onyx font-medium">
+                    무료로 Gemini API 키를 발급받아 등록하시면 빠른 속도와 안정된 한도로 AI 상담일지 정제 서비스를 이용하실 수 있습니다.
+                </p>
+
+                <!-- Step Guide Card -->
+                <div class="bg-mist p-4 rounded-xl border border-bone flex flex-col gap-2">
+                    <span class="font-bold text-onyx text-[11px] uppercase text-brand-violet">💡 API 키 무료 발급 3단계</span>
+                    <ol class="list-decimal list-inside flex flex-col gap-1.5 text-onyx text-xs">
+                        <li>아래 <strong>Google AI Studio 발급 버튼</strong>을 클릭하여 이동합니다.</li>
+                        <li>구글 계정 로그인 후 <strong>[Create API Key]</strong>를 누릅니다.</li>
+                        <li>생성된 API 키를 복사한 뒤 아래 입력란에 붙여넣고 저장하세요!</li>
+                    </ol>
+                </div>
+
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn-pill-ghost justify-center py-3 text-xs text-brand-violet border-brand-violet/30 hover:bg-brand-violet/5 font-bold flex items-center gap-1.5">
+                    <i class="ph ph-arrow-square-out text-base"></i>
+                    Google AI Studio에서 무료 API Key 발급받기
+                </a>
+
+                <div class="flex flex-col gap-1.5 mt-2">
+                    <label class="text-[11px] font-bold text-onyx">Gemini API Key 입력</label>
+                    <input type="password" id="welcomeApiKeyInput" placeholder="AIzaSy..." class="clickup-input text-xs w-full">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-bone">
+                <button onclick="toggleModal('apiWelcomeModal')" class="text-xs text-slate-gray hover:underline font-medium">
+                    나중에 설정하기 (기본 모드)
+                </button>
+                <button onclick="saveWelcomeApiKey()" class="btn-pill-black py-2.5 px-6 text-xs">
+                    키 저장 및 시작하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-onyx text-white px-5 py-3 rounded-full text-xs font-semibold shadow-xl opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2">
+        알림 메시지
+    </div>
+
+    <!-- APPLICATION LOGIC -->
+    <script>
+        // Subtypes data mapping
+        const subTypesMap = {
+            "이용자 상담 (장애인)": [
+                "이용연계 상담 (신규/변경)",
+                "모니터링 상담 (점검/만족도)",
+                "종결 관련 상담 (서비스 중단/이관)",
+                "고충 및 미구인 상담",
+                "기타 요구사항 상담"
+            ],
+            "활동지원사 상담": [
+                "채용 및 이용연계 상담",
+                "모니터링 및 근무점검",
+                "근무 고충 및 갈등 중재",
+                "퇴사 및 종결 상담",
+                "보수교육 및 기타 상담"
+            ]
+        };
+
+        // State
+        let currentJournalText = "";
+        let historyData = [];
+
+        // Window Load Initialization
+        window.onload = function() {
+            updateSubTypes();
+            loadHistoryFromStorage();
+            const savedKey = localStorage.getItem('oryzo_gemini_api_key');
+            if (savedKey) {
+                document.getElementById('customApiKeyInput').value = savedKey;
+                document.getElementById('apiKeyStatusText').textContent = 'API Key 등록됨';
+            } else {
+                setTimeout(() => {
+                    toggleModal('apiWelcomeModal');
+                }, 400);
+            }
+        };
+
+        function updateSubTypes() {
+            const category = document.getElementById('consultCategory').value;
+            const typeSelect = document.getElementById('consultType');
+            typeSelect.innerHTML = '';
+            
+            const options = subTypesMap[category] || [];
+            options.forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt;
+                el.textContent = opt;
+                typeSelect.appendChild(el);
+            });
+        }
+
+        // Character Counter Update
+        function updateCharCounter() {
+            const val = document.getElementById('rawInput').value;
+            document.getElementById('charCounter').textContent = `${val.length} 자`;
+        }
+
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.toggle('hidden');
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('customApiKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('oryzo_gemini_api_key', key);
+                document.getElementById('apiKeyStatusText').textContent = 'API Key 등록됨';
+                showToast("Gemini API Key가 저장되었습니다.");
+            } else {
+                localStorage.removeItem('oryzo_gemini_api_key');
+                document.getElementById('apiKeyStatusText').textContent = 'Gemini API 키 설정';
+                showToast("API Key 설정이 해제되었습니다.");
+            }
+            toggleModal('apiModal');
+        }
+
+        function saveWelcomeApiKey() {
+            const key = document.getElementById('welcomeApiKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('oryzo_gemini_api_key', key);
+                document.getElementById('customApiKeyInput').value = key;
+                document.getElementById('apiKeyStatusText').textContent = 'API Key 등록됨';
+                showToast("Gemini API Key가 정상 저장되었습니다!");
+            } else {
+                showToast("기본 모드로 시작합니다.");
+            }
+            toggleModal('apiWelcomeModal');
+        }
+
+        function switchInputTab(tab) {
+            const tText = document.getElementById('tabText');
+            const tAudio = document.getElementById('tabAudio');
+            if (tab === 'text') {
+                tText.className = "btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5";
+                tAudio.className = "btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5";
+            } else {
+                tAudio.className = "btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5";
+                tText.className = "btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5";
+            }
+        }
+
+        // Load Preset Samples - Focused on Disability & Personal Assistants
+        function loadSample(type) {
+            const input = document.getElementById('rawInput');
+            const name = document.getElementById('clientName');
+            const category = document.getElementById('consultCategory');
+            const cType = document.getElementById('consultType');
+
+            if (type === 'userLink') {
+                category.value = "이용자 상담 (장애인)";
+                updateSubTypes();
+                cType.value = "이용연계 상담 (신규/변경)";
+                name.value = "이OO 이용자 (뇌병변 장애)";
+                input.value = "전화 및 방문 상담 진행. 휠체어 램프 설치건 진행 상황 체크함.\n최근 이웃과의 소음 문제로 스트레스 호소하시며 심리적 불안정 표출함.\n장애인 활동지원 서비스 시간 추가 배정 가능 여부 물어보심.\n전담인력 소견: 활동지원기관 담당 코디네이터 연계하여 바우처 서비스 시간 신청 안내 및 주거환경 개선 사업 연계 지속 점검하기로 함.";
+            } else if (type === 'userMonitor') {
+                category.value = "이용자 상담 (장애인)";
+                updateSubTypes();
+                cType.value = "모니터링 상담 (점검/만족도)";
+                name.value = "김OO 이용자 (지체장애)";
+                input.value = "분기별 현장 모니터링 실시. 활동지원사의 서비스 제공 태도 및 시간 준수 여부 점검.\n이용자 만족도 높음. 식사 보조 및 병원 동행 시 매우 친절하다고 전함.\n다만 활동지원사의 개인 일정으로 간혹 시간 변경 요청이 발생하여 사전 협의가 잘 이루어지도록 안내 필요하다고 하심.\n소견: 활동지원사에게 사전 연락 수칙 안내 및 현장 점검 완료.";
+            } else if (type === 'helperConsult') {
+                category.value = "활동지원사 상담";
+                updateSubTypes();
+                cType.value = "근무 고충 및 갈등 중재";
+                name.value = "박OO 활동지원사";
+                input.value = "활동지원사 면담 요청. 매칭된 이용자 가구의 무리한 집안일 요청(가족 빨래 등)으로 고충 호소.\n서비스 제공 범위(이용자 본인 지원)에 대해 이용자 측과의 시각 차이가 있어 갈등 발생 직전임.\n사회복지사 조치: 이용자 가구 방문하여 활동지원 서비스 사업 지침 및 제공 범위 재안내 실시 예정. 지원사 심리적 안돈 도모.";
+            }
+            updateCharCounter();
+            showToast("선택한 상담 샘플이 입력되었습니다.");
+        }
+
+        function clearCurrentSession() {
+            document.getElementById('rawInput').value = '';
+            document.getElementById('clientName').value = '';
+            document.getElementById('resultContainer').innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-center p-8 gap-3 text-slate-gray">
+                    <i class="ph ph-notebook text-4xl text-bone"></i>
+                    <p class="text-xs">상담 메모를 입력하고 <br><strong class="text-onyx">'사회복지 규격 상담일지 정제하기'</strong>를 눌러주세요.</p>
+                </div>
+            `;
+            document.getElementById('createdDate').textContent = '작성 일시: -';
+            updateCharCounter();
+            showToast("입력창이 초기화되었습니다.");
+        }
+
+        // API Journal Generation Call
+        async function generateJournal() {
+            const rawText = document.getElementById('rawInput').value.trim();
+            const clientName = document.getElementById('clientName').value.trim() || '미지정';
+            const category = document.getElementById('consultCategory').value;
+            const consultType = document.getElementById('consultType').value;
+
+            if (!rawText) {
+                showToast("상담 메모 내용을 입력해 주세요!");
+                return;
+            }
+
+            // Show Loading
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+
+            const savedKey = localStorage.getItem('oryzo_gemini_api_key') || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${savedKey}`;
+
+            const systemPrompt = `
+You are an expert Social Worker (사회복지사) and Case Manager in the field of Disability Welfare and Personal Assistance Services (장애인 활동지원사업).
+
+Convert the raw consultation note into a professional **Disability Social Work Consultation Journal (장애인복지/활동지원 상담일지)**.
+
+Adapt tone and vocabulary based on whether this is an **이용자 상담 (장애인)** or **활동지원사 상담**:
+
+[사회복지 상담일지 양식]
+1. 📋 기본 정보
+   - 구분: ${category}
+   - 성명: ${clientName}
+   - 세부 상담 유형: ${consultType}
+   - 작성 일시: (현재일시 자동반영)
+
+2. 🎯 상담 목적 및 개요
+   - 상담 진행 배경 및 접촉 형태 (방문/전화/상담실)
+
+3. 💬 주호소 및 상담 내용 (Chief Complaint & Content)
+   - 이용자/활동지원사가 직접 호소하거나 논의한 핵심 사항
+   - 서비스 이용연계, 모니터링, 고충, 종결 등 관련 구체적 사안
+
+4. 🔍 전담인력/사회복지사 사정 및 종합 소견 (Assessment)
+   - 장애인 이용자의 신체·정신·주거·환경적 사정 또는 활동지원사의 근무 환경/지침 준수 사정
+
+5. 🚀 향후 조치 및 개입 계획 (Intervention & Linkage)
+   - 바우처 시간 신청, 자원 연계, 활동지원사 매칭/중재, 모니터링 일정 등 실행 중심 조치 사항
+
+Maintain precise, respectful, and clear Korean social work record standards.
+`;
+
+            const userPrompt = `
+[상담 구분]: ${category}
+[세부 유형]: ${consultType}
+[성명/대상]: ${clientName}
+[raw 기록]:
+${rawText}
+`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const data = await response.json();
+                const outputText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (outputText) {
+                    currentJournalText = outputText;
+                    document.getElementById('resultContainer').innerText = outputText;
+                    const nowStr = new Date().toLocaleString('ko-KR');
+                    document.getElementById('createdDate').textContent = `작성 일시: ${nowStr}`;
+
+                    // Save to history
+                    saveToHistory({
+                        id: Date.now(),
+                        client: `${clientName} (${category.includes('이용자') ? '이용자' : '지원사'})`,
+                        type: consultType,
+                        text: outputText,
+                        date: nowStr
+                    });
+                    showToast("장애인복지 상담일지가 규격 작성되었습니다!");
+                } else {
+                    throw new Error("Invalid API Response Format");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("일지 생성 실패. API 키를 확인하거나 다시 시도해 주세요.");
+            } finally {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+            }
+        }
+
+        // Copy & Download Result
+        function copyResultText() {
+            if (!currentJournalText) {
+                showToast("복사할 생성 결과가 없습니다.");
+                return;
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = currentJournalText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("클립보드에 상담일지가 복사되었습니다!");
+        }
+
+        function downloadAsTxt() {
+            if (!currentJournalText) {
+                showToast("저장할 상담일지가 없습니다.");
+                return;
+            }
+            const blob = new Blob([currentJournalText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `사회복지상담일지_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("텍스트 파일로 다운로드되었습니다.");
+        }
+
+        // History Management
+        function saveToHistory(item) {
+            historyData.unshift(item);
+            if (historyData.length > 5) historyData.pop();
+            localStorage.setItem('oryzo_history', JSON.stringify(historyData));
+            renderHistory();
+        }
+
+        function loadHistoryFromStorage() {
+            const saved = localStorage.getItem('oryzo_history');
+            if (saved) {
+                try {
+                    historyData = JSON.parse(saved);
+                    renderHistory();
+                } catch(e) {}
+            }
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('historyList');
+            if (historyData.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-gray italic text-center py-2">저장된 상담일지 기록이 없습니다.</p>`;
+                return;
+            }
+            listEl.innerHTML = historyData.map(item => `
+                <div onclick="loadHistoryItem(${item.id})" class="p-2.5 rounded-xl border border-bone bg-signal-white hover:bg-mist cursor-pointer transition flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <span class="font-bold text-onyx">${item.client}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-bone text-[10px] text-slate-gray">${item.type}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-gray font-mono">${item.date.split(' ')[0]}</span>
+                </div>
+            `).join('');
+        }
+
+        function loadHistoryItem(id) {
+            const found = historyData.find(h => h.id === id);
+            if (found) {
+                currentJournalText = found.text;
+                document.getElementById('resultContainer').innerText = found.text;
+                document.getElementById('createdDate').textContent = `작성 일시: ${found.date}`;
+                showToast(`${found.client} 상담일지를 불러왔습니다.`);
+            }
+        }
+
+        function clearHistory() {
+            historyData = [];
+            localStorage.removeItem('oryzo_history');
+            renderHistory();
+            showToast("히스토리가 삭제되었습니다.");
+        }
+
+        // Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
