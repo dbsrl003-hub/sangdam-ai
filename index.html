@@ -598,8 +598,8 @@
             document.getElementById('loadingSpinner').classList.remove('hidden');
 
             const savedKey = localStorage.getItem('oryzo_gemini_api_key') || "";
-            // 표준 안정화 모델인 gemini-1.5-flash 로 URL 변경하여 API Key 인식률 및 멀티모달 안정성 향상
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${savedKey}`;
+            // 최신 표준 모델인 gemini-2.5-flash 모델로 변경
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${savedKey}`;
 
             const requestBody = {
                 contents: [{
