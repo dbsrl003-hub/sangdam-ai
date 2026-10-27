@@ -179,17 +179,48 @@
                             <i class="ph ph-note-pencil"></i> 상담 메모/기록
                         </button>
                         <button id="tabAudio" onclick="switchInputTab('audio')" class="btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5">
-                            <i class="ph ph-microphone"></i> 축약 녹음 텍스트
+                            <i class="ph ph-microphone"></i> 음성/녹음 파일 첨부
+                        </button>
+                    </div>
+
+                    <!-- Audio Upload Area (Hidden by default, shown when clicking Audio Tab) -->
+                    <div id="audioUploadContainer" class="hidden flex-col gap-3 p-4 bg-mist rounded-xl border border-dashed border-slate-300 transition-all">
+                        <div class="flex flex-col items-center justify-center text-center py-4 gap-2 cursor-pointer" onclick="document.getElementById('audioFileInput').click()">
+                            <div class="w-12 h-12 rounded-full bg-brand-violet/10 text-brand-violet flex items-center justify-center text-2xl">
+                                <i class="ph ph-cloud-arrow-up"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-onyx">녹음 또는 음성 파일 클릭하여 업로드</p>
+                                <p class="text-[11px] text-slate-gray">m4a, mp3, wav, ogg, webm 파일 지원</p>
+                            </div>
+                            <input type="file" id="audioFileInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
+                        </div>
+
+                        <!-- Selected Audio Preview Status -->
+                        <div id="audioFileInfo" class="hidden bg-signal-white p-3 rounded-lg border border-bone flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <i class="ph ph-file-audio text-brand-violet text-lg"></i>
+                                <span id="audioFileName" class="font-medium text-onyx truncate">audio_record.mp3</span>
+                                <span id="audioFileSize" class="text-[10px] text-slate-gray font-mono">2.4MB</span>
+                            </div>
+                            <button onclick="clearAudioFile(event)" class="text-slate-gray hover:text-red-500 text-sm">
+                                <i class="ph ph-x-circle"></i>
+                            </button>
+                        </div>
+
+                        <button id="sttConvertBtn" onclick="convertAudioToText()" class="btn-pill-black py-2.5 px-4 text-xs flex items-center justify-center gap-2">
+                            <i class="ph ph-waveform"></i>
+                            <span>음성을 텍스트로 변환하기 (STT)</span>
                         </button>
                     </div>
 
                     <!-- Main Textarea -->
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center text-xs text-slate-gray font-medium">
-                            <label for="rawInput">원문 상담 기록 입력 (자유 양식 메모)</label>
+                            <label for="rawInput" id="inputLabel">원문 상담 기록 입력 (자유 양식 메모)</label>
                             <span id="charCounter" class="text-[11px] font-mono">0 자</span>
                         </div>
-                        <textarea id="rawInput" oninput="updateCharCounter()" rows="9" placeholder="예시:
+                        <textarea id="rawInput" oninput="updateCharCounter()" rows="8" placeholder="예시:
 - 대상자: 김OO 어르신 (독거노인)
 - 방문 이유: 최근 주거환경 악화 및 식사 해결 어려움 호소.
 - 상담 내용: 무릎 관절염으로 외부 활동 불가. 건강 상태 악화되어 식사 하루 1끼만 하심. 
@@ -410,6 +441,8 @@
         // State
         let currentJournalText = "";
         let historyData = [];
+        let selectedAudioBase64 = null;
+        let selectedAudioMime = "";
 
         // Window Load Initialization
         window.onload = function() {
@@ -483,12 +516,101 @@
         function switchInputTab(tab) {
             const tText = document.getElementById('tabText');
             const tAudio = document.getElementById('tabAudio');
+            const audioContainer = document.getElementById('audioUploadContainer');
+
             if (tab === 'text') {
                 tText.className = "btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5";
                 tAudio.className = "btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5";
+                audioContainer.classList.add('hidden');
             } else {
                 tAudio.className = "btn-pill-black text-xs px-4 py-1.5 flex items-center gap-1.5";
                 tText.className = "btn-pill-ghost text-xs px-4 py-1.5 flex items-center gap-1.5";
+                audioContainer.classList.remove('hidden');
+            }
+        }
+
+        // Handle Audio File Selection
+        function handleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 20 * 1024 * 1024) {
+                showToast("파일 크기가 20MB를 초과합니다. 더 짧은 녹음 파일을 사용해 주세요.");
+                return;
+            }
+
+            document.getElementById('audioFileName').textContent = file.name;
+            document.getElementById('audioFileSize').textContent = (file.size / (1024 * 1024)).toFixed(2) + 'MB';
+            document.getElementById('audioFileInfo').classList.remove('hidden');
+
+            selectedAudioMime = file.type || "audio/mp3";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const result = e.target.result;
+                selectedAudioBase64 = result.split(',')[1];
+                showToast("음성 파일이 성공적으로로드되었습니다.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearAudioFile(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('audioFileInput').value = '';
+            document.getElementById('audioFileInfo').classList.add('hidden');
+            selectedAudioBase64 = null;
+            selectedAudioMime = "";
+            showToast("음성 파일이 제거되었습니다.");
+        }
+
+        // Speech To Text using Gemini Audio multimodal ability
+        async function convertAudioToText() {
+            if (!selectedAudioBase64) {
+                showToast("먼저 음성 녹음 파일을 업로드해 주세요.");
+                return;
+            }
+
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+
+            const savedKey = localStorage.getItem('oryzo_gemini_api_key') || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${savedKey}`;
+
+            const requestBody = {
+                contents: [{
+                    parts: [
+                        { text: "이 음성 녹음 파일을 듣고 말소리를 정확히 한국어 텍스트로 받아적어주세요. 불필요한 서론이나 추임새 없이 녹음 내용 원문 텍스트만 출력하세요." },
+                        {
+                            inlineData: {
+                                mimeType: selectedAudioMime,
+                                data: selectedAudioBase64
+                            }
+                        }
+                    ]
+                }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                const transcribedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (transcribedText) {
+                    document.getElementById('rawInput').value = transcribedText;
+                    updateCharCounter();
+                    showToast("음성 녹음이 텍스트로 변환되었습니다! 아래에서 수정 후 일지를 정제하세요.");
+                } else {
+                    throw new Error("STT Conversion Failed");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("음성 변환에 실패했습니다. API 키 및 녹음 파일 형식을 확인하세요.");
+            } finally {
+                document.getElementById('loadingSpinner').classList.add('hidden');
             }
         }
 
