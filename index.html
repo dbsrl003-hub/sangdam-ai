@@ -598,7 +598,8 @@
             document.getElementById('loadingSpinner').classList.remove('hidden');
 
             const savedKey = localStorage.getItem('oryzo_gemini_api_key') || "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${savedKey}`;
+            // 표준 안정화 모델인 gemini-1.5-flash 로 URL 변경하여 API Key 인식률 및 멀티모달 안정성 향상
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${savedKey}`;
 
             const requestBody = {
                 contents: [{
@@ -634,13 +635,13 @@
                     switchInputTab('text');
                     document.getElementById('rawInput').value = transcribedText;
                     updateCharCounter();
-                    showToast("음성 변환 완료! 메모를 확인하고 '상담일지 정제하기'를 누르세요.");
+                    showToast("음성 변환 완료! 메모를 확인하고 '상담일지 정제하기'를 눌러주세요.");
                 } else {
                     throw new Error("STT Conversion Failed");
                 }
             } catch (err) {
                 console.error("Audio Transcription Error:", err);
-                showToast("음성 변환 실패: API 키 설정 및 음성 파일 포맷을 확인해 주세요.");
+                showToast(`음성 변환 실패: ${err.message || 'API 키 및 음성 파일 포맷을 확인해 주세요.'}`);
             } finally {
                 document.getElementById('loadingSpinner').classList.add('hidden');
             }
