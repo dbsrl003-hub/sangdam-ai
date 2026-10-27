@@ -320,7 +320,7 @@
                     Google AI Studio에서 발급 <i class="ph ph-arrow-square-out"></i>
                 </a>
             </div>
-            <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="clickup-input text-xs w-full">
+            <input type="password" id="customApiKeyInput" placeholder="AQ.Ab8RN6IffVWLtrlL..." class="clickup-input text-xs w-full">
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="saveApiKey()" class="btn-pill-black py-2.5 px-6 text-xs">저장하기</button>
             </div>
@@ -356,7 +356,7 @@
                     <ol class="list-decimal list-inside flex flex-col gap-1.5 text-onyx text-xs">
                         <li>아래 <strong>Google AI Studio 발급 버튼</strong>을 클릭하여 이동합니다.</li>
                         <li>구글 계정 로그인 후 <strong>[Create API Key]</strong>를 누릅니다.</li>
-                        <li>생성된 API 키를 복사한 뒤 아래 입력란에 붙여넣고 저장하세요!</li>
+                        <li>생성된 API 키(AQ.Ab8... 시작)를 복사한 뒤 아래 입력란에 붙여넣고 저장하세요!</li>
                     </ol>
                 </div>
 
@@ -367,7 +367,7 @@
 
                 <div class="flex flex-col gap-1.5 mt-2">
                     <label class="text-[11px] font-bold text-onyx">Gemini API Key 입력</label>
-                    <input type="password" id="welcomeApiKeyInput" placeholder="AIzaSy..." class="clickup-input text-xs w-full">
+                    <input type="password" id="welcomeApiKeyInput" placeholder="AQ.Ab8RN6IffVWLtrlL..." class="clickup-input text-xs w-full">
                 </div>
             </div>
 
@@ -395,7 +395,7 @@
                 "이용연계 상담 (신규/변경)",
                 "모니터링 상담 (점검/만족도)",
                 "종결 관련 상담 (서비스 중단/이관)",
-                "고충 및 미구인 상담",
+                "고충 상담",
                 "기타 요구사항 상담"
             ],
             "활동지원사 상담": [
@@ -555,40 +555,35 @@
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${savedKey}`;
 
             const systemPrompt = `
-You are an expert Social Worker (사회복지사) and Case Manager in the field of Disability Welfare and Personal Assistance Services (장애인 활동지원사업).
+You are an expert Social Worker (사회복지사) in Disability Services (장애인 활동지원사업).
+Convert the raw consultation note into a formal consultation record based on the strict four-part layout below.
 
-Convert the raw consultation note into a professional **Disability Social Work Consultation Journal (장애인복지/활동지원 상담일지)**.
+IMPORTANT WRITING STYLE GUIDELINES:
+1. DO NOT include basic profile redundant descriptions (like address, disability type details, birth date, etc.) as the social worker already knows the client well.
+2. DO NOT include sign-offs like "작성자 사회복지사 OOO(인)" at the end.
+3. Write Section 4 ("4. 상담내용 총 정리 결과") in a continuous, highly detailed, realistic, narrative paragraph format (줄글 서술형). Connect events chronologically and naturally with social work documentation language (e.g., "~하였음", "~안내함", "~보고함", "~확인됨").
+4. Make the entire text copy-paste ready for social work ERP/case management systems.
 
-Adapt tone and vocabulary based on whether this is an **이용자 상담 (장애인)** or **활동지원사 상담**:
+REQUIRED STRUCTURE AND EXACT HEADINGS:
 
-[사회복지 상담일지 양식]
-1. 📋 기본 정보
-   - 구분: ${category}
-   - 성명: ${clientName}
-   - 세부 상담 유형: ${consultType}
-   - 작성 일시: (현재일시 자동반영)
+1. 상담목적 및 개요
+(Briefly state the contact mode, main goal, and background without redundant client profile info)
 
-2. 🎯 상담 목적 및 개요
-   - 상담 진행 배경 및 접촉 형태 (방문/전화/상담실)
+2. 주요 상담 내용
+(Key points discussed during the conversation in bullet points or short paras)
 
-3. 💬 주호소 및 상담 내용 (Chief Complaint & Content)
-   - 이용자/활동지원사가 직접 호소하거나 논의한 핵심 사항
-   - 서비스 이용연계, 모니터링, 고충, 종결 등 관련 구체적 사안
+3. 향후 조치 및 개입 계획
+(Immediate and follow-up actions required by the social worker)
 
-4. 🔍 전담인력/사회복지사 사정 및 종합 소견 (Assessment)
-   - 장애인 이용자의 신체·정신·주거·환경적 사정 또는 활동지원사의 근무 환경/지침 준수 사정
-
-5. 🚀 향후 조치 및 개입 계획 (Intervention & Linkage)
-   - 바우처 시간 신청, 자원 연계, 활동지원사 매칭/중재, 모니터링 일정 등 실행 중심 조치 사항
-
-Maintain precise, respectful, and clear Korean social work record standards.
+4. 상담내용 총 정리 결과
+(Write a full, connected narrative paragraph summarizing sections 1 to 3 seamlessly. Use real social worker recording voice, continuous narrative format like: "XX일에 ~하여 ~로 이동하였음. 이에 따라 ~를 보고하였으며, 이용자는 금일 ~한 상태라고 함. 향후 ~를 안내하며 상담을 마무리하였음.")
 `;
 
             const userPrompt = `
 [상담 구분]: ${category}
-[세부 유형]: ${consultType}
+[세부 상담 유형]: ${consultType}
 [성명/대상]: ${clientName}
-[raw 기록]:
+[상담 원문 메모]:
 ${rawText}
 `;
 
@@ -619,7 +614,7 @@ ${rawText}
                         text: outputText,
                         date: nowStr
                     });
-                    showToast("장애인복지 상담일지가 규격 작성되었습니다!");
+                    showToast("요청하신 줄글 서술형 상담일지로 정제되었습니다!");
                 } else {
                     throw new Error("Invalid API Response Format");
                 }
